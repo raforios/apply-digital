@@ -1,0 +1,6 @@
+# ignore node_modules
+node_modules
+# ignore .git & .cache forlders
+.git
+.cache
+dist

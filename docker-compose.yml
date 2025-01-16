@@ -1,0 +1,74 @@
+services:  
+##########################################################################
+# DATABASE SERVICE MASTER
+##########################################################################
+    pg-database:
+        image: postgres:latest
+        container_name: pg-database
+        restart: unless-stopped
+        labels:
+            env: production
+            team: devops
+        ports:
+            - ${POSTGRES_PORT_PC}:${POSTGRES_PORT_CONTAINER}
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+            POSTGRES_DB: ${POSTGRES_DB}
+        volumes:
+            #allow *.sql, *.sql.gz, or *.sh and is execute only if data directory is empty
+            - ./dbfiles/init-user-db.sh:/docker-entrypoint-initdb.d/initdb.sh
+            - ./pg-database-data:/var/lib/postgresql/data
+        networks:
+            pg_network:
+                ipv4_address: 192.168.40.20
+        hostname: pg_database
+
+##########################################################################
+# PGADMIN SERVICE
+##########################################################################
+    pgadmin4:
+        image: dpage/pgadmin4:latest
+        container_name: pgadmin4
+        restart: unless-stopped
+        ports:
+            - ${PGADMIN_LISTEN_PORT_PC}:${PGADMIN_LISTEN_PORT_CONTAINER}
+        environment:
+            PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+            PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+        volumes:
+            - ./pgadmin-data:/var/lib/pgadmin
+        depends_on:
+            - pg-database
+        networks:
+            pg_network:
+                ipv4_address: 192.168.40.21
+        hostname: pgadmin_server
+
+##########################################################################
+# API SERVICE
+##########################################################################
+    api-service:
+        image: nestjs-app:latest
+        container_name: nestjs-app
+        restart: unless-stopped
+        labels:
+            env: production
+            team: devops
+        ports:
+            - 3100:3000
+        networks:
+            pg_network:
+                ipv4_address: 192.168.40.25
+        hostname: api_service
+
+volumes:
+    pg-database-data:
+    pgadmin-data:
+
+networks:
+    pg_network:
+        ipam:
+            config:
+              - subnet: 192.168.40.0/24
+
